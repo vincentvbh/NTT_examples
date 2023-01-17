@@ -18,6 +18,23 @@
 
 int16_t table[2048];
 
+
+static void CT_butterfly_Montgomery_int16(int16_t *des, size_t indx_a, size_t indx_b, int16_t twiddle){
+
+    int16_t scale, mod, t;
+
+    scale = 900; // RmodQ1^{-1} mod Q1
+
+    mod = Q1;
+    mulmod_int16(des + indx_b, des + indx_b, &scale, &mod);
+
+    scale = 1;
+    mulmod_int16(&t, des + indx_b, &twiddle, &mod);
+    submod_int16(des + indx_b, des + indx_a, &t, &mod);
+    addmod_int16(des + indx_a, des + indx_a, &t, &mod);
+
+}
+
 static void NTT_3_layer(int16_t des[ARRAY_N], int16_t twiddle_table[8]){
 
     int16_t mod;
@@ -26,70 +43,46 @@ static void NTT_3_layer(int16_t des[ARRAY_N], int16_t twiddle_table[8]){
 
     for(size_t i = 0; i < ARRAY_N / 8; i++){
 
-        CT_butterfly_int16(des + i,
+        CT_butterfly_Montgomery_int16(des + i,
             0 * (ARRAY_N / 8), 4 * (ARRAY_N / 8),
-            twiddle_table + 1,
-            &mod,
-            sizeof(int16_t));
-        CT_butterfly_int16(des + i,
+            twiddle_table[1]);
+        CT_butterfly_Montgomery_int16(des + i,
             1 * (ARRAY_N / 8), 5 * (ARRAY_N / 8),
-            twiddle_table + 1,
-            &mod,
-            sizeof(int16_t));
-        CT_butterfly_int16(des + i,
+            twiddle_table[1]);
+        CT_butterfly_Montgomery_int16(des + i,
             2 * (ARRAY_N / 8), 6 * (ARRAY_N / 8),
-            twiddle_table + 1,
-            &mod,
-            sizeof(int16_t));
-        CT_butterfly_int16(des + i,
+            twiddle_table[1]);
+        CT_butterfly_Montgomery_int16(des + i,
             3 * (ARRAY_N / 8), 7 * (ARRAY_N / 8),
-            twiddle_table + 1,
-            &mod,
-            sizeof(int16_t));
+            twiddle_table[1]);
 
 
-        CT_butterfly_int16(des + i,
+        CT_butterfly_Montgomery_int16(des + i,
             0 * (ARRAY_N / 8), 2 * (ARRAY_N / 8),
-            twiddle_table + 2,
-            &mod,
-            sizeof(int16_t));
-        CT_butterfly_int16(des + i,
+            twiddle_table[2]);
+        CT_butterfly_Montgomery_int16(des + i,
             1 * (ARRAY_N / 8), 3 * (ARRAY_N / 8),
-            twiddle_table + 2,
-            &mod,
-            sizeof(int16_t));
-        CT_butterfly_int16(des + i,
+            twiddle_table[2]);
+        CT_butterfly_Montgomery_int16(des + i,
             4 * (ARRAY_N / 8), 6 * (ARRAY_N / 8),
-            twiddle_table + 3,
-            &mod,
-            sizeof(int16_t));
-        CT_butterfly_int16(des + i,
+            twiddle_table[3]);
+        CT_butterfly_Montgomery_int16(des + i,
             5 * (ARRAY_N / 8), 7 * (ARRAY_N / 8),
-            twiddle_table + 3,
-            &mod,
-            sizeof(int16_t));
+            twiddle_table[3]);
 
 
-        CT_butterfly_int16(des + i,
+        CT_butterfly_Montgomery_int16(des + i,
             0 * (ARRAY_N / 8), 1 * (ARRAY_N / 8),
-            twiddle_table + 4,
-            &mod,
-            sizeof(int16_t));
-        CT_butterfly_int16(des + i,
+            twiddle_table[4]);
+        CT_butterfly_Montgomery_int16(des + i,
             2 * (ARRAY_N / 8), 3 * (ARRAY_N / 8),
-            twiddle_table + 5,
-            &mod,
-            sizeof(int16_t));
-        CT_butterfly_int16(des + i,
+            twiddle_table[5]);
+        CT_butterfly_Montgomery_int16(des + i,
             4 * (ARRAY_N / 8), 5 * (ARRAY_N / 8),
-            twiddle_table + 6,
-            &mod,
-            sizeof(int16_t));
-        CT_butterfly_int16(des + i,
+            twiddle_table[6]);
+        CT_butterfly_Montgomery_int16(des + i,
             6 * (ARRAY_N / 8), 7 * (ARRAY_N / 8),
-            twiddle_table + 7,
-            &mod,
-            sizeof(int16_t));
+            twiddle_table[7]);
 
     }
 
@@ -162,7 +155,7 @@ int main(void){
         mulmod_int16
     );
 
-    scale = 1;
+    scale = RmodQ1;
     mod = Q1;
     twiddle = omegaQ1;
     mulmod_int16(&omega, &twiddle, &twiddle, &mod);
