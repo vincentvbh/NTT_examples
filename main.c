@@ -29,10 +29,10 @@ int main(void){
     int16_t mod, omega, scale, twiddle, t;
 
     struct compress_profile profile;
-    profile.compressed_layers = 8;
-    for(size_t i = 0; i < profile.compressed_layers; i++){
-        profile.merged_layers[i] = 1;
-    }
+    profile.compressed_layers = 3;
+    profile.merged_layers[0] = 3;
+    profile.merged_layers[1] = 3;
+    profile.merged_layers[2] = 2;
 
     mod = Q1;
     for(size_t i = 0; i < ARRAY_N; i++){
@@ -81,8 +81,6 @@ int main(void){
 	mulmod_int16
     );
 
-#if 1
-
 
     scale = 1;
     mod = Q1;
@@ -97,8 +95,17 @@ int main(void){
     );
 
     mod = Q1;
+    // TODO: change the initial 3-layer merge into simple C code
     compressed_CT_NTT_generic(a,
-        0, 7,
+        0, 0,
+	table,
+	&mod,
+	&profile,
+	sizeof(int16_t),
+	m_layer_CT_butterfly_int16
+    );
+    compressed_CT_NTT_generic(a,
+        1, 2,
 	table,
 	&mod,
 	&profile,
@@ -106,7 +113,7 @@ int main(void){
 	m_layer_CT_butterfly_int16
     );
     compressed_CT_NTT_generic(b,
-        0, 7,
+        0, 2,
         table,
         &mod,
         &profile,
@@ -137,7 +144,7 @@ int main(void){
     );
 
     compressed_CT_iNTT_generic(res,
-        0, 7,
+        0, 2,
         table,
         &mod,
         &profile,
@@ -150,21 +157,6 @@ int main(void){
     for(size_t i = 0; i < ARRAY_N; i++){
        mulmod_int16(res + i, res + i, &scale, &mod);
     }
-
-#endif
-
-#if 0
-    twiddle = 1;
-    mod = Q1;
-    naive_mulR(res,
-        a, b,
-	ARRAY_N, &twiddle,
-	&mod,
-	sizeof(int16_t),
-	addmod_int16,
-	mulmod_int16
-    );
-#endif
 
     omega = invomegaQ1;
     scale = 1;
