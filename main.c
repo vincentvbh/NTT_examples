@@ -46,11 +46,11 @@ int main(void){
     mod = Q1;
     naive_mulR(ref,
         a, b,
-	ARRAY_N, &twiddle,
-	&mod,
-	sizeof(int16_t),
-	addmod_int16,
-	mulmod_int16
+        ARRAY_N, &twiddle,
+        &mod,
+        sizeof(int16_t),
+        addmod_int16,
+        mulmod_int16
     );
 
     omega = omegaQ1;
@@ -58,27 +58,27 @@ int main(void){
     mod = Q1;
     gen_twist_table_generic(table,
         &scale, &omega,
-	&mod,
-	sizeof(int16_t),
-	mulmod_int16
+        &mod,
+        sizeof(int16_t),
+        mulmod_int16
     );
 
     mod = Q1;
     point_mul(a,
-	a, table,
-	ARRAY_N, 1,
-	&mod,
-	sizeof(int16_t),
-	mulmod_int16
+        a, table,
+        ARRAY_N, 1,
+        &mod,
+        sizeof(int16_t),
+        mulmod_int16
     );
-    
+
     mod = Q1;
     point_mul(b,
-	b, table,
-	ARRAY_N, 1,
-	&mod,
-	sizeof(int16_t),
-	mulmod_int16
+        b, table,
+        ARRAY_N, 1,
+        &mod,
+        sizeof(int16_t),
+        mulmod_int16
     );
 
 
@@ -88,29 +88,29 @@ int main(void){
     mulmod_int16(&omega, &twiddle, &twiddle, &mod);
     gen_streamlined_CT_table_generic(table,
         &scale, &omega,
-	&mod,
-	sizeof(int16_t),
-	mulmod_int16,
-	&profile, 0
+        &mod,
+        sizeof(int16_t),
+        mulmod_int16,
+        &profile, 0
     );
 
     mod = Q1;
     // TODO: change the initial 3-layer merge into simple C code
     compressed_CT_NTT_generic(a,
         0, 0,
-	table,
-	&mod,
-	&profile,
-	sizeof(int16_t),
-	m_layer_CT_butterfly_int16
+        table,
+        &mod,
+        &profile,
+        sizeof(int16_t),
+        m_layer_CT_butterfly_int16
     );
     compressed_CT_NTT_generic(a,
         1, 2,
-	table,
-	&mod,
-	&profile,
-	sizeof(int16_t),
-	m_layer_CT_butterfly_int16
+        table,
+        &mod,
+        &profile,
+        sizeof(int16_t),
+        m_layer_CT_butterfly_int16
     );
     compressed_CT_NTT_generic(b,
         0, 2,
@@ -124,9 +124,9 @@ int main(void){
     mod = Q1;
     point_mul(res,
         a, b,
-	ARRAY_N, 1,
+        ARRAY_N, 1,
         &mod,
-	sizeof(int16_t),
+        sizeof(int16_t),
         mulmod_int16
     );
 
@@ -139,8 +139,8 @@ int main(void){
         &mod,
         sizeof(int16_t),
         mulmod_int16,
-	expmod_int16,
-	&profile, 0
+        expmod_int16,
+        &profile, 0
     );
 
     compressed_CT_iNTT_generic(res,
@@ -163,18 +163,18 @@ int main(void){
     mod = Q1;
     gen_twist_table_generic(table,
         &scale, &omega,
-	&mod,
-	sizeof(int16_t),
-	mulmod_int16
+        &mod,
+        sizeof(int16_t),
+        mulmod_int16
     );
 
     mod = Q1;
     point_mul(res,
-	res, table,
-	ARRAY_N, 1,
-	&mod,
-	sizeof(int16_t),
-	mulmod_int16
+        res, table,
+        ARRAY_N, 1,
+        &mod,
+        sizeof(int16_t),
+        mulmod_int16
     );
 
 
