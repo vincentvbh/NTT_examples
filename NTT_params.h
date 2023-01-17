@@ -18,6 +18,8 @@
 // invNQ1 = NTT_N^{-1} mod Q1
 #define invNQ1 7651
 
+// Q1prime = Q1^{-1} mod^{+-} 2^16
+#define Q1prime2 (-7679)
 
 #endif
 

@@ -8,40 +8,87 @@
 
 #include "NTT_params.h"
 
-
-
 #include "gen_table.h"
 #include "tools.h"
 #include "naive_mult.h"
 #include "ntt_c.h"
 
+#define VEC_LEN 16
 
 int16_t table[2048];
 
+static void CT_butterfly_Montgomery_M4_int16(int16_t *des, size_t indx_a, size_t indx_b, int16_t twiddle){
+
+    assert(VEC_LEN <= 2);
+
+    int32_t prod[VEC_LEN];
+    int16_t t[VEC_LEN];
+
+    for(size_t i = 0; i < VEC_LEN; i++){
+
+        prod[i] = (int32_t)des[indx_b + i] * twiddle;
+        t[i] = (int16_t)prod[i] * Q1prime;
+        prod[i] += (int32_t)t[i] * Q1;
+
+        t[i] = (int16_t)(prod[i] >> 16);
+
+        des[indx_b + i] = des[indx_a + i] - t[i];
+        des[indx_a + i] = des[indx_a + i] + t[i];
+
+    }
+
+}
+
+static void CT_butterfly_Montgomery_AVX2_int16(int16_t *des, size_t indx_a, size_t indx_b, int16_t twiddle){
+
+    int16_t lo[VEC_LEN], hi[VEC_LEN];
+
+    for(size_t i = 0; i < VEC_LEN; i++){
+
+        hi[i] = ((int32_t)des[indx_b + i] * twiddle) >> 16;
+        lo[i] = des[indx_b + i] * twiddle * Q1prime2;
+        lo[i] = ((int32_t)lo[i] * Q1) >> 16;
+        hi[i] = hi[i] - lo[i];
+
+        des[indx_b + i] = des[indx_a + i] - hi[i];
+        des[indx_a + i] = des[indx_a + i] + hi[i];
+
+    }
+
+}
+
+static void CT_butterfly_Montgomery_Neon_int16(int16_t *des, size_t indx_a, size_t indx_b, int16_t twiddle){
+
+    int16_t lo[VEC_LEN], hi[VEC_LEN];
+
+    assert( (VEC_LEN == 4) || (VEC_LEN == 8) );
+
+    for(size_t i = 0; i < VEC_LEN; i++){
+        hi[i] = ((int32_t)des[indx_b + i] * twiddle * 2) >> 16;
+        lo[i] = des[indx_b + i] * twiddle * Q1prime2;
+        lo[i] = ((int32_t)lo[i] * Q1 * 2) >> 16;
+        hi[i] = (hi[i] - lo[i]) >> 1;
+
+        des[indx_b + i] = des[indx_a + i] - hi[i];
+        des[indx_a + i] = des[indx_a + i] + hi[i];
+    }
+
+
+
+}
 
 static void CT_butterfly_Montgomery_int16(int16_t *des, size_t indx_a, size_t indx_b, int16_t twiddle){
 
-    int16_t scale, mod, t;
 
-    scale = 900; // RmodQ1^{-1} mod Q1
-
-    mod = Q1;
-    mulmod_int16(des + indx_b, des + indx_b, &scale, &mod);
-
-    scale = 1;
-    mulmod_int16(&t, des + indx_b, &twiddle, &mod);
-    submod_int16(des + indx_b, des + indx_a, &t, &mod);
-    addmod_int16(des + indx_a, des + indx_a, &t, &mod);
+    // CT_butterfly_Montgomery_M4_int16(des, indx_a, indx_b, twiddle);
+    CT_butterfly_Montgomery_AVX2_int16(des, indx_a, indx_b, twiddle);
+    // CT_butterfly_Montgomery_Neon_int16(des, indx_a, indx_b, twiddle);
 
 }
 
 static void NTT_3_layer(int16_t des[ARRAY_N], int16_t twiddle_table[8]){
 
-    int16_t mod;
-
-    mod = Q1;
-
-    for(size_t i = 0; i < ARRAY_N / 8; i++){
+    for(size_t i = 0; i < ARRAY_N / 8; i += VEC_LEN){
 
         CT_butterfly_Montgomery_int16(des + i,
             0 * (ARRAY_N / 8), 4 * (ARRAY_N / 8),
@@ -127,39 +174,10 @@ int main(void){
         mulmod_int16
     );
 
-    omega = omegaQ1;
-    scale = 1;
-    mod = Q1;
-    gen_twist_table_generic(table,
-        &scale, &omega,
-        &mod,
-        sizeof(int16_t),
-        mulmod_int16
-    );
-
-    mod = Q1;
-    point_mul(a,
-        a, table,
-        ARRAY_N, 1,
-        &mod,
-        sizeof(int16_t),
-        mulmod_int16
-    );
-
-    mod = Q1;
-    point_mul(b,
-        b, table,
-        ARRAY_N, 1,
-        &mod,
-        sizeof(int16_t),
-        mulmod_int16
-    );
-
     scale = RmodQ1;
     mod = Q1;
-    twiddle = omegaQ1;
-    mulmod_int16(&omega, &twiddle, &twiddle, &mod);
-    gen_streamlined_CT_table_generic(table,
+    omega = omegaQ1;
+    gen_streamlined_CT_negacyclic_table_generic(table,
         &scale, &omega,
         &mod,
         sizeof(int16_t),
@@ -170,9 +188,8 @@ int main(void){
 
     scale = 1;
     mod = Q1;
-    twiddle = omegaQ1;
-    mulmod_int16(&omega, &twiddle, &twiddle, &mod);
-    gen_streamlined_CT_table_generic(table,
+    omega = omegaQ1;
+    gen_streamlined_CT_negacyclic_table_generic(table,
         &scale, &omega,
         &mod,
         sizeof(int16_t),
@@ -209,8 +226,8 @@ int main(void){
 
     scale = 1;
     mod = Q1;
-    twiddle = invomegaQ1;
-    mulmod_int16(&omega, &twiddle, &twiddle, &mod);
+    omega = invomegaQ1;
+    mulmod_int16(&omega, &omega, &omega, &mod);
     gen_streamlined_inv_CT_table_generic(table,
         &scale, &omega,
         &mod,
