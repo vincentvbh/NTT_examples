@@ -18,6 +18,87 @@
 
 int16_t table[2048];
 
+static void NTT_3_layer(int16_t des[ARRAY_N], int16_t twiddle_table[8]){
+
+    int16_t mod;
+
+    mod = Q1;
+
+    for(size_t i = 0; i < ARRAY_N / 8; i++){
+
+        CT_butterfly_int16(des + i,
+            0 * (ARRAY_N / 8), 4 * (ARRAY_N / 8),
+            twiddle_table + 1,
+            &mod,
+            sizeof(int16_t));
+        CT_butterfly_int16(des + i,
+            1 * (ARRAY_N / 8), 5 * (ARRAY_N / 8),
+            twiddle_table + 1,
+            &mod,
+            sizeof(int16_t));
+        CT_butterfly_int16(des + i,
+            2 * (ARRAY_N / 8), 6 * (ARRAY_N / 8),
+            twiddle_table + 1,
+            &mod,
+            sizeof(int16_t));
+        CT_butterfly_int16(des + i,
+            3 * (ARRAY_N / 8), 7 * (ARRAY_N / 8),
+            twiddle_table + 1,
+            &mod,
+            sizeof(int16_t));
+
+
+        CT_butterfly_int16(des + i,
+            0 * (ARRAY_N / 8), 2 * (ARRAY_N / 8),
+            twiddle_table + 2,
+            &mod,
+            sizeof(int16_t));
+        CT_butterfly_int16(des + i,
+            1 * (ARRAY_N / 8), 3 * (ARRAY_N / 8),
+            twiddle_table + 2,
+            &mod,
+            sizeof(int16_t));
+        CT_butterfly_int16(des + i,
+            4 * (ARRAY_N / 8), 6 * (ARRAY_N / 8),
+            twiddle_table + 3,
+            &mod,
+            sizeof(int16_t));
+        CT_butterfly_int16(des + i,
+            5 * (ARRAY_N / 8), 7 * (ARRAY_N / 8),
+            twiddle_table + 3,
+            &mod,
+            sizeof(int16_t));
+
+
+        CT_butterfly_int16(des + i,
+            0 * (ARRAY_N / 8), 1 * (ARRAY_N / 8),
+            twiddle_table + 4,
+            &mod,
+            sizeof(int16_t));
+        CT_butterfly_int16(des + i,
+            2 * (ARRAY_N / 8), 3 * (ARRAY_N / 8),
+            twiddle_table + 5,
+            &mod,
+            sizeof(int16_t));
+        CT_butterfly_int16(des + i,
+            4 * (ARRAY_N / 8), 5 * (ARRAY_N / 8),
+            twiddle_table + 6,
+            &mod,
+            sizeof(int16_t));
+        CT_butterfly_int16(des + i,
+            6 * (ARRAY_N / 8), 7 * (ARRAY_N / 8),
+            twiddle_table + 7,
+            &mod,
+            sizeof(int16_t));
+
+    }
+
+
+
+
+
+}
+
 int main(void){
 
 
@@ -81,6 +162,18 @@ int main(void){
         mulmod_int16
     );
 
+    scale = 1;
+    mod = Q1;
+    twiddle = omegaQ1;
+    mulmod_int16(&omega, &twiddle, &twiddle, &mod);
+    gen_streamlined_CT_table_generic(table,
+        &scale, &omega,
+        &mod,
+        sizeof(int16_t),
+        mulmod_int16,
+        &profile, 1
+    );
+    NTT_3_layer(a, table);
 
     scale = 1;
     mod = Q1;
@@ -95,15 +188,6 @@ int main(void){
     );
 
     mod = Q1;
-    // TODO: change the initial 3-layer merge into simple C code
-    compressed_CT_NTT_generic(a,
-        0, 0,
-        table,
-        &mod,
-        &profile,
-        sizeof(int16_t),
-        m_layer_CT_butterfly_int16
-    );
     compressed_CT_NTT_generic(a,
         1, 2,
         table,
